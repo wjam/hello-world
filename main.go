@@ -23,7 +23,17 @@ func main() {
 	rootCtx := context.Background()
 
 	healthCheck := flag.Bool("health", false, "Check if server is healthy")
+	logDest := flag.String("log-dest", "/dev/stdout", "Where to write the log to")
 	flag.Parse()
+
+	var err error
+	logOutput, err := os.OpenFile(*logDest, os.O_APPEND|os.O_RDWR, 0)
+	if err != nil {
+		slog.ErrorContext(rootCtx, "Failed to open log destination", "error", err)
+		os.Exit(1)
+	}
+
+	slog.SetDefault(slog.New(slog.NewTextHandler(logOutput, nil)))
 
 	if *healthCheck {
 		if err := checkServerHealth(rootCtx); err != nil {

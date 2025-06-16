@@ -5,5 +5,5 @@ or similar.
 
 * Echos back the details of request for every response
 * Doesn't run as root in case `runAsNonRoot` is enabled
-* Is able to check the server is running using the same binary (`/usr/local/bin/app --health`) to serve as the ECS
+* Is able to check the server is running using the same binary (`/usr/local/bin/app --health --log-dest /proc/1/fd/1`) to serve as the ECS
   health check.
