@@ -13,6 +13,7 @@ import (
 func app() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		slog.InfoContext(r.Context(), "Handling request", "method", r.Method, "path", r.URL.Path)
 		var response struct {
 			URL struct {
 				Host  string              `json:"host"`

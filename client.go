@@ -10,12 +10,13 @@ import (
 )
 
 func checkServerHealth(ctx context.Context) error {
-	slog.InfoContext(ctx, "Checking server health")
 	client := &http.Client{
 		Timeout: 1 * time.Second,
 	}
 
-	host := net.JoinHostPort("127.0.0.1", port)
+	host := net.JoinHostPort("localhost", port)
+
+	slog.InfoContext(ctx, "Checking server health", "host", host)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("http://%s", host), nil)
 	if err != nil {
