@@ -10,6 +10,20 @@ import (
 	"os/signal"
 )
 
+var localIpAddresses []string
+
+func init() {
+	addresses, err := net.InterfaceAddrs()
+	if err != nil {
+		panic(err)
+	}
+	for _, address := range addresses {
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			localIpAddresses = append(localIpAddresses, ipnet.IP.String())
+		}
+	}
+}
+
 func app() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
@@ -19,9 +33,12 @@ func app() http.Handler {
 				Host  string              `json:"host"`
 				Path  string              `json:"path"`
 				Query map[string][]string `json:"query"`
-			}
+			} `json:"url"`
 			Headers map[string][]string `json:"headers"`
 			Method  string              `json:"method"`
+			Server  struct {
+				IPs []string `json:"ips"`
+			} `json:"server"`
 		}
 
 		response.URL.Host = r.Host
@@ -29,6 +46,7 @@ func app() http.Handler {
 		response.URL.Query = r.URL.Query()
 		response.Headers = r.Header
 		response.Method = r.Method
+		response.Server.IPs = localIpAddresses
 
 		out, err := json.Marshal(response)
 		if err != nil {
