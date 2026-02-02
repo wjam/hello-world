@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -59,9 +60,18 @@ func app() http.Handler {
 	return mux
 }
 
-func runApp(ctx context.Context, addr string, handler http.Handler) error {
+func runApp(ctx context.Context, addr string, enableHttps bool, handler http.Handler) error {
 	rootCtx, cancelRoot := signal.NotifyContext(ctx, signals...)
 	defer cancelRoot()
+
+	var tlsConfig *tls.Config
+	if enableHttps {
+		var err error
+		tlsConfig, err = generateTLSConfig()
+		if err != nil {
+			return err
+		}
+	}
 
 	// In-flight requests get a context that won't be immediately cancelled on SIGINT/SIGTERM
 	// so that they can be gracefully stopped.
@@ -71,14 +81,19 @@ func runApp(ctx context.Context, addr string, handler http.Handler) error {
 		BaseContext: func(_ net.Listener) context.Context {
 			return ongoingCtx
 		},
-		Handler: handler,
+		Handler:   handler,
+		TLSConfig: tlsConfig,
 	}
 
 	errCh := make(chan error)
 	go func() {
 		defer close(errCh)
 		slog.InfoContext(rootCtx, "Server listening", "addr", addr)
-		if err := server.ListenAndServe(); err != nil {
+		f := server.ListenAndServe
+		if enableHttps {
+			f = func() error { return server.ListenAndServeTLS("", "") }
+		}
+		if err := f(); err != nil {
 			errCh <- err
 		}
 	}()

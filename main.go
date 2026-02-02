@@ -22,12 +22,13 @@ func main() {
 	// Reminder: `defer` doesn't behave as expected in functions with log.Fatal, os.Exit, etc.
 	rootCtx := context.Background()
 
+	enableHttps := flag.Bool("https", false, "Enable HTTPS")
 	healthCheck := flag.Bool("health", false, "Check if server is healthy")
 	logDest := flag.String("log-dest", "/dev/stdout", "Where to write the log to")
 	flag.Parse()
 
 	var err error
-	logOutput, err := os.OpenFile(*logDest, os.O_APPEND|os.O_RDWR, 0)
+	logOutput, err := os.OpenFile(*logDest, os.O_APPEND|os.O_WRONLY, 0)
 	if err != nil {
 		slog.ErrorContext(rootCtx, "Failed to open log destination", "error", err)
 		os.Exit(1)
@@ -36,7 +37,7 @@ func main() {
 	slog.SetDefault(slog.New(slog.NewTextHandler(logOutput, nil)))
 
 	if *healthCheck {
-		if err := checkServerHealth(rootCtx); err != nil {
+		if err := checkServerHealth(rootCtx, *enableHttps); err != nil {
 			slog.ErrorContext(rootCtx, "health check failed", "error", err)
 			os.Exit(1)
 		}
@@ -45,7 +46,7 @@ func main() {
 
 	app := app()
 
-	if err := runApp(rootCtx, fmt.Sprintf(":%s", port), app); err != nil {
+	if err := runApp(rootCtx, fmt.Sprintf(":%s", port), *enableHttps, app); err != nil {
 		slog.ErrorContext(rootCtx, "failed to run app", "error", err)
 		os.Exit(1)
 	}
