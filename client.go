@@ -12,6 +12,9 @@ import (
 )
 
 func checkServerHealth(ctx context.Context, enableHttps bool) error {
+	ctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+	defer cancel()
+
 	client := &http.Client{
 		Timeout: 1 * time.Second,
 		Transport: &http.Transport{
@@ -38,9 +41,11 @@ func checkServerHealth(ctx context.Context, enableHttps bool) error {
 	}
 
 	b, err := client.Do(req)
-	defer func() {
-		_, _ = io.Copy(io.Discard, b.Body)
-		_ = b.Body.Close()
-	}()
+	if b != nil {
+		defer func() {
+			_, _ = io.Copy(io.Discard, b.Body)
+			_ = b.Body.Close()
+		}()
+	}
 	return err
 }

@@ -27,6 +27,11 @@ func main() {
 	logDest := flag.String("log-dest", "/dev/stdout", "Where to write the log to")
 	flag.Parse()
 
+	if _, ok := os.LookupEnv("HTTPS"); ok {
+		t := true
+		enableHttps = &t
+	}
+
 	var err error
 	logOutput, err := os.OpenFile(*logDest, os.O_APPEND|os.O_WRONLY, 0)
 	if err != nil {

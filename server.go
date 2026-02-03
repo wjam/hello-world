@@ -88,11 +88,13 @@ func runApp(ctx context.Context, addr string, enableHttps bool, handler http.Han
 	errCh := make(chan error)
 	go func() {
 		defer close(errCh)
-		slog.InfoContext(rootCtx, "Server listening", "addr", addr)
+		msg := "Server listening"
 		f := server.ListenAndServe
 		if enableHttps {
+			msg = "Server listening on TLS"
 			f = func() error { return server.ListenAndServeTLS("", "") }
 		}
+		slog.InfoContext(rootCtx, msg, "addr", addr)
 		if err := f(); err != nil {
 			errCh <- err
 		}
